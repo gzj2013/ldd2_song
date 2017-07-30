@@ -18,39 +18,39 @@
 #include <asm/system.h>
 #include <asm/uaccess.h>
 
-#define GLOBALMEM_SIZE	0x1000	/*È«¾ÖÄÚ´æ×î´ó4K×Ö½Ú*/
-#define MEM_CLEAR 		0x1  	/*Çå0È«¾ÖÄÚ´æ*/
-#define GLOBALMEM_MAJOR 250    	/*Ô¤ÉèµÄglobalmemµÄÖ÷Éè±¸ºÅ*/
+#define GLOBALMEM_SIZE	0x1000	/*å…¨å±€å†…å­˜æœ€å¤§4Kå­—èŠ‚*/
+#define MEM_CLEAR 		0x1  	/*æ¸…0å…¨å±€å†…å­˜*/
+#define GLOBALMEM_MAJOR 250    	/*é¢„è®¾çš„globalmemçš„ä¸»è®¾å¤‡å·*/
 
 static globalmem_major = GLOBALMEM_MAJOR;
-/*globalmemÉè±¸½á¹¹Ìå*/
+/*globalmemè®¾å¤‡ç»“æ„ä½“*/
 struct globalmem_dev                                     
 {                                                        
-  struct cdev cdev; /*cdev½á¹¹Ìå*/                       
-  unsigned char mem[GLOBALMEM_SIZE]; /*È«¾ÖÄÚ´æ*/        
+  struct cdev cdev; /*cdevç»“æ„ä½“*/                       
+  unsigned char mem[GLOBALMEM_SIZE]; /*å…¨å±€å†…å­˜*/        
 };
 
-struct globalmem_dev *globalmem_devp; /*Éè±¸½á¹¹ÌåÖ¸Õë*/
-/*ÎÄ¼ş´ò¿ªº¯Êı*/
+struct globalmem_dev *globalmem_devp; /*è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ*/
+/*æ–‡ä»¶æ‰“å¼€å‡½æ•°*/
 int globalmem_open(struct inode *inode, struct file *filp)
 {
-  /*½«Éè±¸½á¹¹ÌåÖ¸Õë¸³Öµ¸øÎÄ¼şË½ÓĞÊı¾İÖ¸Õë*/
+  /*å°†è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆèµ‹å€¼ç»™æ–‡ä»¶ç§æœ‰æ•°æ®æŒ‡é’ˆ*/
   struct globalmem_dev *dev;
   
   dev = container_of(inode->i_cdev,struct globalmem_dev,cdev);  
   filp->private_data = dev;  
   return 0;
 }
-/*ÎÄ¼şÊÍ·Åº¯Êı*/
+/*æ–‡ä»¶é‡Šæ”¾å‡½æ•°*/
 int globalmem_release(struct inode *inode, struct file *filp)
 {
   return 0;
 }
 
-/* ioctlÉè±¸¿ØÖÆº¯Êı */
+/* ioctlè®¾å¤‡æ§åˆ¶å‡½æ•° */
 static int globalmem_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, unsigned long arg)
 {
-  struct globalmem_dev *dev = filp->private_data;/*»ñµÃÉè±¸½á¹¹ÌåÖ¸Õë*/
+  struct globalmem_dev *dev = filp->private_data;/*è·å¾—è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ*/
 
   switch (cmd)
   {
@@ -65,21 +65,21 @@ static int globalmem_ioctl(struct inode *inodep, struct file *filp, unsigned int
   return 0;
 }
 
-/*¶Áº¯Êı*/
+/*è¯»å‡½æ•°*/
 static ssize_t globalmem_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
 {
   unsigned long p =  *ppos;
   unsigned int count = size;
   int ret = 0;
-  struct globalmem_dev *dev = filp->private_data; /*»ñµÃÉè±¸½á¹¹ÌåÖ¸Õë*/
+  struct globalmem_dev *dev = filp->private_data; /*è·å¾—è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ*/
 
-  /*·ÖÎöºÍ»ñÈ¡ÓĞĞ§µÄĞ´³¤¶È*/
+  /*åˆ†æå’Œè·å–æœ‰æ•ˆçš„å†™é•¿åº¦*/
   if (p >= GLOBALMEM_SIZE)
     return count ?  - ENXIO: 0;
   if (count > GLOBALMEM_SIZE - p)
     count = GLOBALMEM_SIZE - p;
 
-  /*ÄÚºË¿Õ¼ä->ÓÃ»§¿Õ¼ä*/
+  /*å†…æ ¸ç©ºé—´->ç”¨æˆ·ç©ºé—´*/
   if (copy_to_user(buf, (void*)(dev->mem + p), count))
   {
     ret =  - EFAULT;
@@ -95,22 +95,22 @@ static ssize_t globalmem_read(struct file *filp, char __user *buf, size_t size, 
   return ret;
 }
 
-/*Ğ´º¯Êı*/
+/*å†™å‡½æ•°*/
 static ssize_t globalmem_write(struct file *filp, const char __user *buf,
   size_t size, loff_t *ppos)
 {
   unsigned long p =  *ppos;
   unsigned int count = size;
   int ret = 0;
-  struct globalmem_dev *dev = filp->private_data; /*»ñµÃÉè±¸½á¹¹ÌåÖ¸Õë*/
+  struct globalmem_dev *dev = filp->private_data; /*è·å¾—è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ*/
   
-  /*·ÖÎöºÍ»ñÈ¡ÓĞĞ§µÄĞ´³¤¶È*/
+  /*åˆ†æå’Œè·å–æœ‰æ•ˆçš„å†™é•¿åº¦*/
   if (p >= GLOBALMEM_SIZE)
     return count ?  - ENXIO: 0;
   if (count > GLOBALMEM_SIZE - p)
     count = GLOBALMEM_SIZE - p;
     
-  /*ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä*/
+  /*ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´*/
   if (copy_from_user(dev->mem + p, buf, count))
     ret =  - EFAULT;
   else
@@ -124,13 +124,13 @@ static ssize_t globalmem_write(struct file *filp, const char __user *buf,
   return ret;
 }
 
-/* seekÎÄ¼ş¶¨Î»º¯Êı */
+/* seekæ–‡ä»¶å®šä½å‡½æ•° */
 static loff_t globalmem_llseek(struct file *filp, loff_t offset, int orig)
 {
   loff_t ret = 0;
   switch (orig)
   {
-    case 0:   /*Ïà¶ÔÎÄ¼ş¿ªÊ¼Î»ÖÃÆ«ÒÆ*/
+    case 0:   /*ç›¸å¯¹æ–‡ä»¶å¼€å§‹ä½ç½®åç§»*/
       if (offset < 0)
       {
         ret =  - EINVAL;
@@ -144,7 +144,7 @@ static loff_t globalmem_llseek(struct file *filp, loff_t offset, int orig)
       filp->f_pos = (unsigned int)offset;
       ret = filp->f_pos;
       break;
-    case 1:   /*Ïà¶ÔÎÄ¼şµ±Ç°Î»ÖÃÆ«ÒÆ*/
+    case 1:   /*ç›¸å¯¹æ–‡ä»¶å½“å‰ä½ç½®åç§»*/
       if ((filp->f_pos + offset) > GLOBALMEM_SIZE)
       {
         ret =  - EINVAL;
@@ -165,7 +165,7 @@ static loff_t globalmem_llseek(struct file *filp, loff_t offset, int orig)
   return ret;
 }
 
-/*ÎÄ¼ş²Ù×÷½á¹¹Ìå*/
+/*æ–‡ä»¶æ“ä½œç»“æ„ä½“*/
 static const struct file_operations globalmem_fops =
 {
   .owner = THIS_MODULE,
@@ -177,7 +177,7 @@ static const struct file_operations globalmem_fops =
   .release = globalmem_release,
 };
 
-/*³õÊ¼»¯²¢×¢²ácdev*/
+/*åˆå§‹åŒ–å¹¶æ³¨å†Œcdev*/
 static void globalmem_setup_cdev(struct globalmem_dev *dev, int index)
 {
   int err, devno = MKDEV(globalmem_major, index);
@@ -190,16 +190,16 @@ static void globalmem_setup_cdev(struct globalmem_dev *dev, int index)
     printk(KERN_NOTICE "Error %d adding LED%d", err, index);
 }
 
-/*Éè±¸Çı¶¯Ä£¿é¼ÓÔØº¯Êı*/
+/*è®¾å¤‡é©±åŠ¨æ¨¡å—åŠ è½½å‡½æ•°*/
 int globalmem_init(void)
 {
 	int result;
 	dev_t devno = MKDEV(globalmem_major, 0);
 	
-	/* ÉêÇëÉè±¸ºÅ*/
+	/* ç”³è¯·è®¾å¤‡å·*/
 	if (globalmem_major)
 		result = register_chrdev_region(devno, 2, "globalmem2");
-	else  /* ¶¯Ì¬ÉêÇëÉè±¸ºÅ */
+	else  /* åŠ¨æ€ç”³è¯·è®¾å¤‡å· */
 	{
 		result = alloc_chrdev_region(&devno, 0, 2, "globalmem2");
 		globalmem_major = MAJOR(devno);
@@ -207,9 +207,9 @@ int globalmem_init(void)
 	if (result < 0)
 	  return result;
 	  
-	/* ¶¯Ì¬ÉêÇë2¸öÉè±¸½á¹¹ÌåµÄÄÚ´æ*/
+	/* åŠ¨æ€ç”³è¯·2ä¸ªè®¾å¤‡ç»“æ„ä½“çš„å†…å­˜*/
 	globalmem_devp = kmalloc(2*sizeof(struct globalmem_dev), GFP_KERNEL);
-	if (!globalmem_devp)    /*ÉêÇëÊ§°Ü*/
+	if (!globalmem_devp)    /*ç”³è¯·å¤±è´¥*/
 	{
 		result =  - ENOMEM;
 		goto fail_malloc;
@@ -225,13 +225,13 @@ fail_malloc:
 	return result;
 }
 
-/*Ä£¿éĞ¶ÔØº¯Êı*/
+/*æ¨¡å—å¸è½½å‡½æ•°*/
 void globalmem_exit(void)
 {
 	cdev_del(&(globalmem_devp[0].cdev));   
-	cdev_del(&(globalmem_devp[1].cdev));   /*×¢Ïúcdev*/
-	kfree(globalmem_devp);     /*ÊÍ·ÅÉè±¸½á¹¹ÌåÄÚ´æ*/
-	unregister_chrdev_region(MKDEV(globalmem_major, 0), 2); /*ÊÍ·ÅÉè±¸ºÅ*/
+	cdev_del(&(globalmem_devp[1].cdev));   /*æ³¨é”€cdev*/
+	kfree(globalmem_devp);     /*é‡Šæ”¾è®¾å¤‡ç»“æ„ä½“å†…å­˜*/
+	unregister_chrdev_region(MKDEV(globalmem_major, 0), 2); /*é‡Šæ”¾è®¾å¤‡å·*/
 }
 
 MODULE_AUTHOR("Song Baohua");
