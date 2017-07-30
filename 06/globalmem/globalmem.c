@@ -8,6 +8,7 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/errno.h>
+#include <linux/slab.h>   //kmalloc()
 #include <linux/mm.h>
 #include <linux/sched.h>
 #include <linux/init.h>
@@ -21,7 +22,7 @@
 //#define GLOBALMEM_MAJOR 254    	/*预设的globalmem的主设备号*/
 #define GLOBALMEM_MAJOR 0    	/*预设的globalmem的主设备号*/
 
-static globalmem_major = GLOBALMEM_MAJOR;
+static int globalmem_major = GLOBALMEM_MAJOR;
 
 /*globalmem设备结构体*/
 struct globalmem_dev                                     
@@ -46,7 +47,7 @@ int globalmem_release(struct inode *inode, struct file *filp)
 }
 
 /* ioctl设备控制函数 */
-static int globalmem_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, unsigned long arg)
+static long globalmem_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct globalmem_dev *dev = filp->private_data;/*获得设备结构体指针*/
 
@@ -87,7 +88,7 @@ static ssize_t globalmem_read(struct file *filp, char __user *buf, size_t size, 
 	{
 		*ppos += count;
 		ret = count;
-		printk(KERN_INFO "read %d bytes(s) from %d\n", count, p);
+		printk(KERN_INFO "read %u bytes(s) from %ld\n", count, p);
 	}
 	
 	return ret;
@@ -115,7 +116,7 @@ static ssize_t globalmem_write(struct file *filp, const char __user *buf, size_t
 	{
 		*ppos += count;
 		ret = count;
-		printk(KERN_INFO "written %d bytes(s) from %d\n", count, p);
+		printk(KERN_INFO "written %u bytes(s) from %ld\n", count, p);
 	}
 	
 	return ret;
@@ -172,7 +173,7 @@ static const struct file_operations globalmem_fops =
 	.llseek  = globalmem_llseek,
 	.read 	 = globalmem_read,
 	.write 	 = globalmem_write,
-	.ioctl 	 = globalmem_ioctl,
+	.unlocked_ioctl 	 = globalmem_ioctl,
 	.open 	 = globalmem_open,
 	.release = globalmem_release,
 };
